@@ -1,0 +1,181 @@
+Laravel
+*******
+
+Primer paso
+===========
+
+Instalar PHP y Composer.
+
+Corrección de errores (si ocurren)
+==================================
+
+Corregir error:
+
+PS C:\Users\Tino> php -v
+PHP Warning:  PHP Startup: Unable to load dynamic library 'bz2' (tried: \xampp\php\ext\bz2 (No se puede encontrar el m├│dulo especificado), \xampp\php\ext\php_bz2.dll (No se puede encontrar el m├│dulo especificado)) in Unknown on line 0
+
+Warning: PHP Startup: Unable to load dynamic library 'bz2' (tried: \xampp\php\ext\bz2 (No se puede encontrar el m├│dulo especificado), \xampp\php\ext\php_bz2.dll (No se puede encontrar el m├│dulo especificado)) in Unknown on line 0
+PHP Warning:  PHP Startup: Unable to load dynamic library 'curl' (tried: \xampp\php\ext\curl (No se puede encontrar el m├│dulo especificado), \xampp\php\ext\php_curl.dll (No se puede encontrar el m├│dulo especificado)) in Unknown on line 0
+
+...
+
+Cambiar en php.ini:
+extension_dir=<ruta absoluta de php>\ext
+
+Corregir error:
+
+PHP Warning:  Cannot open "\xampp\php\extras\browscap.ini" for reading in Unknown on line 0
+
+Warning: Cannot open "\xampp\php\extras\browscap.ini" for reading in Unknown on line 0
+PHP Fatal error:  Unable to start standard module in Unknown on line 0
+
+Fatal error: Unable to start standard module in Unknown on line 0
+
+Cambiar en php.ini:
+extension_dir=<ruta absoluta de php>\extras\browscap.ini
+
+Instalar Laravel
+================
+
+Instalación global
+------------------
+
+Ejecutar:
+composer global require laravel/installer
+
+Instalación global y creación del proyecto
+------------------------------------------
+
+Ejecutar:
+composer create-project laravel/laravel <nombre de carpeta de proyecto>
+
+Crear proyecto de Laravel (con instalación global)
+==================================================
+
+laravel new <nombre de carpeta de proyecto>
+
+Dentro del proyecto
+-------------------
+
+cd <nombre de carpeta de proyecto>
+
+Iniciar el servidor de aplicación web
+-------------------------------------
+
+php artisan serve
+
+Habilitar modo de mantenimiento
+-------------------------------
+
+php artisan down
+
+Deshabilitar modo de mantenimiento
+----------------------------------
+
+php artisan up
+
+Rutas y Blades
+==============
+
+Los blades son componentes de vistas que se encuentran en la ruta: proyecto/resources/views y tienen la extensión blade.php.
+
+Las rutas son, de forma análoga a Express (Node.js), los puntos de invocación del middleware o API para mostrar un recurso: HTML, punto del API, etcétera:
+
+* Vamos a proyecto/routes y vemos cuatro archivos:
+api.php
+channels.php
+console.php
+web.php
+
+* En web.php tenemos:
+
+<?php
+
+use Illuminate\Support\Facades\Route;
+
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register web routes for your application. These
+| routes are loaded by the RouteServiceProvider and all of them will
+| be assigned to the "web" middleware group. Make something great!
+|
+*/
+
+Route::get('/', function () {
+    return view('welcome');
+});
+
+
+* Probemos creando un nuevo blade en views y renderizarlo:
+
+app.blade.php:
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hola mundo</title>
+</head>
+<body>
+    <h1>Hola Mundo</h1>
+</body>
+</html>
+
+routes/web.php:
+
+Route::get('/', function () {
+    return view('app');
+});
+
+Route::get('/welcome', function () {
+    return view('welcome');
+});
+
+Edición de plantillas (blades)
+==============================
+
+Trabaja con HTML y permite empleo de directivas:
+
+* Crear: resources/views/todos/index.blade.php
+
+* Modificar ruta:
+
+Route::get('/todos', function () {
+    return view('todos.index');
+});
+
+* En app.blade.php:
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    ...
+</head>
+
+<body>
+    ...
+    @yield('content') <=========== agregar
+</body>
+
+</html>
+
+* En todos/index.blade.php:
+
+@extends('app') <===== llama a app.blade.php
+
+@section('content') <===== llama a @yield('content')
+    hola mundo <========= escribir lo que sea (texto, HTML, etc.)
+@endsection
+
+
+
+
+
+
+
