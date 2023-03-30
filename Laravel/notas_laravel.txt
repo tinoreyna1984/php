@@ -738,7 +738,20 @@ class Category extends Model
 
 Con ello se podrá aplicar el comando de migración.
 
+Enrutamientos
+=============
 
+Originalmente, se podría tener algo como esto:
+
+Route::get('/', function () {
+    return view('welcome');
+});
+
+Donde el index es la vista de la página generada por Laravel por defecto.
+
+Si deseo establecer la página de Todos como el index, procedo con:
+
+Route::get('/', TodosController::class . '@index')->name('todos');
 
 
 
