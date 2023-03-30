@@ -1,13 +1,18 @@
 Laravel
 *******
 
+Usos de Laravel:
+
+* Crear un app web fullstack basado en el esquema MVC usando el lenguaje PHP.
+* Crear APIs de servicios (REST, GraphQL, etc.)
+
 Primer paso
 ===========
 
-Instalar PHP y Composer.
+Instalar PHP (vía directa o por XAMPP) y Composer.
 
 Corrección de errores (si ocurren)
-==================================
+----------------------------------
 
 Corregir error:
 
@@ -172,6 +177,583 @@ Route::get('/todos', function () {
 @section('content') <===== llama a @yield('content')
     hola mundo <========= escribir lo que sea (texto, HTML, etc.)
 @endsection
+
+
+Modelos
+=======
+
+Crear nuevo modelo
+------------------
+
+Ejecutar: php artisan make:model <Modelo> -m
+
+Modelo: es el modelo que queremos crear (el nombre debe ser capitalizado)
+-m: indica que haremos una migración
+
+Una migración es una forma de versionamiento de modelos creados desde Laravel.
+
+Ej: php artisan make:model Todo -m
+
+El resultado debe salir:
+* Modelo: en app/Models debe estar, por ejemplo, Todo.php
+* Migración: en database/migrations debe estar el snapshot <fecha de la migración>_create_todos_table.php
+
+Editar un modelo
+----------------
+
+Ir a la migración generada y trabajar en el método up de ese modelo:
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('todos', function (Blueprint $table) {
+            $table->id();
+            $table->string('title'); // <============= agregamos este campo
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('todos');
+    }
+};
+
+Ejecutar la migración y crear las tablas
+----------------------------------------
+
+Crear esquema. Para este ejemplo, MySQL:
+
+mysql -u root -p
+create database todos;
+
+Configurar conexión a "todos":
+
+* Ir a la raíz del proyecto, acceder a .env
+
+* Trabajar en este bloque:
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=todos # <=== nombre del esquema
+DB_USERNAME=root
+DB_PASSWORD=
+
+* Migrar
+
+Ejecutar: php artisan migrate
+
+Debe generar algo como esto:
+
+PS E:\laravel\tareas-laravel> php artisan migrate
+
+   INFO  Preparing database.
+
+  Creating migration table .............................................................................................................. 515ms DONE
+
+   INFO  Running migrations.
+
+  2014_10_12_000000_create_users_table .................................................................................................. 951ms DONE
+  2014_10_12_100000_create_password_reset_tokens_table ................................................................................ 1,667ms DONE
+  2019_08_19_000000_create_failed_jobs_table ............................................................................................ 757ms DONE
+  2019_12_14_000001_create_personal_access_tokens_table ............................................................................... 1,591ms DONE
+  2023_03_29_211810_create_todos_table .................................................................................................. 299ms DONE
+
+Y se puede verificar la creación de la tabla Todos.
+
+* Deshacer última migración
+
+Ejecutar: php artisan migrate:rollback
+
+
+Controladores
+=============
+
+Crear controlador
+-----------------
+
+Ejecutar: php artisan make:controller <nombre capitalizado del controlador>
+
+Ej: php artisan make:controller TodosController
+
+El resultado es un controlador que se genera en app/Http/Controllers/TodosController.php
+
+Editar un controlador
+---------------------
+
+Previo: convención de nombres para manejo de registros en controladores:
+* index: para mostrar todos los registros.
+* store: para guardar un registro.
+* update: para actualizar un registro.
+* destroy: para eliminar un registro.
+* edit: para mostrar un formulario de edición.
+
+Ejemplo:
+
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Todo;
+use Illuminate\Http\Request;
+
+class TodosController extends Controller
+{
+    public function store(Request $request) {
+        $request->validate([
+            'title' => 'required|min:3'
+        ]);
+
+        $todo = new Todo; // requiere una instancia de la clase Todo
+        $todo->title = $request->title; // guardo el título del request en la instancia
+        $todo->save(); // guardo el registro en la base de datos
+
+        return redirect()->route('todos')->with('success', 'Tarea creada exitosamente'); // hago la redirección hacia "todos"
+    }
+}
+
+Actualizar la ruta con el controlador
+-------------------------------------
+
+<?php
+
+use App\Http\Controllers\TodosController;
+use Illuminate\Support\Facades\Route;
+
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+|
+| ...
+|
+*/
+
+Route::get('/', function () {
+    return view('welcome');
+});
+
+Route::get('/tareas', [TodosController::class, 'index'])->name('todos'); // <==== se iguala el comportamiento del endpoint del POST en la parte de "name"
+
+Route::post('/tareas', [TodosController::class, 'store'])->name('todos'); // <==== agrego la ruta post
+
+Ese POST significa que estoy llamando a la clase del controlador TodosController y a su método "store" para aplicar la inserción como un método post.
+La parte final es opcional, pero recomendable: en caso cambien el nombre de ruta, el endpoint podrá ser reconocido por la vista como "todos".
+
+Integrar a la vista
+-------------------
+
+Sea la vista:
+
+@extends('app')
+
+@section('content')
+    <div class="container w-25 p-4 mt-4">
+        <form action="{{route('todos')}}" method="POST">
+            @csrf
+            <div class="mb-3">
+                <label for="title" class="form-label">Título de la tarea</label>
+                <input type="text" name="title" class="form-control">
+            </div>
+            <button type="submit" class="btn btn-primary">Crear nueva tarea</button>
+        </form>
+    </div>
+@endsection
+
+En el formulario que lo invoca:
+* método: debe ser POST en este caso.
+* action: la expresión debe llamar a la ruta "todos" definida previamente (el efecto de la directiva final "name('todos')").
+* csrf (Cross Site Request Forgery): genera un token de seguridad para prevenir emisiones forzadas al formulario.
+
+
+Vistas - dinamización
+=====================
+
+Sea la vista:
+
+@extends('app')
+
+@section('content')
+    <div class="container w-25 p-4 mt-4">
+
+        <form action="{{ route('todos') }}" method="POST">
+            @csrf
+
+            @if (session('success')) // en caso de éxito
+                <h6 class="alert alert-success">{{ session('success') }}</h6>
+            @endif
+
+            @error('title') // en caso de error
+                <h6 class="alert alert-danger">{{ $message }}</h6>
+            @enderror
+
+            <div class="mb-3">
+                <label for="title" class="form-label">Título de la tarea</label>
+                <input type="text" name="title" class="form-control">
+            </div>
+            <button type="submit" class="btn btn-primary">Crear nueva tarea</button>
+        </form>
+
+        <div>
+            @foreach ($todos as $todo) // listar elementos
+                <div class="row py-1">
+                    <div class="col-md-9 d-flex align-items-center">
+                        <a href="{{ route('todos-edit', ['id' => $todo->id]) }}">{{ $todo->title }}</a>
+                    </div>
+
+                    <div class="col-md-3 d-flex justify-content-end">
+                        <form action="{{ route('todos-destroy', [$todo->id]) }}" method="POST">
+                            @method('DELETE') // "method" de PHP solo admite GET y POST. Debe especificarse los demás métodos REST aquí
+                            @csrf
+                            <button class="btn btn-danger btn-sm">Eliminar</button>
+                        </form>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+
+    </div>
+@endsection
+
+* Si la respuesta al request es exitosa, se genera un mensaje que toma el retorno del controlador: return redirect()->route('todos')->with('success', 'Tarea creada exitosamente')
+* En caso de error en el campo "title", simplemente se llama a la variable "$message", la cual es inyectada a todas las vistas. Muestra el motivo del error.
+* la directiva foreach se basa en la instrucción foreach de PHP, el cual lista bajo la forma "$array as $elemento_actual".
+
+
+Completar un CRUD para un modelo
+================================
+
+Ver y actualizar tarea
+----------------------
+
+De la vista anterior, considerar el enlace:
+<div class="col-md-9 d-flex align-items-center">
+	<a href="{{ route('todos-edit', ['id' => $todo->id]) }}">{{ $todo->title }}</a>
+</div>
+
+Se invoca a la ruta "todos-edit" con el parámetro del ID de la tarea que se renderiza en ese momento. En ese caso, se visualiza por medio de la siguiente ruta:
+
+Route::get('/tareas/{id}', [TodosController::class, 'show'])->name('todos-edit');
+
+Esta ruta tiene el método:
+
+public function show($id) {
+	$todo = Todo::find($id);
+	return view('todos.show', ['todo' => $todo]);
+}
+
+Lo que permite es visualizar la tarea con el ID indicado como parámetro.
+
+Notar la llamada a todos.show. Para ello, se requiere crear un nuevo blade al nivel del index dentro de resources/views/todos, llamado show.blade.php:
+
+@extends('app')
+
+@section('content')
+    <div class="container w-25 p-4 mt-4">
+
+        <form action="{{ route('todos-update', ['id' => $todo->id]) }}" method="POST">
+            @method('PATCH') // actualizar
+            @csrf
+
+            @if (session('success')) // mensaje de éxito al actualizar tarea
+                <h6 class="alert alert-success">{{ session('success') }}</h6>
+            @endif
+
+            @error('title') // mensaje de error al actualizar tarea
+                <h6 class="alert alert-danger">{{ $message }}</h6>
+            @enderror
+
+            <div class="mb-3">
+                <label for="title" class="form-label">Título de la tarea</label>
+                <input type="text" name="title" class="form-control" value="{{$todo->title}}"> // valor de actualización
+            </div>
+            <button type="submit" class="btn btn-primary">Actualizar</button>
+        </form>
+
+    </div>
+@endsection
+
+Para llamar a "todos-update" creamos el siguiente método:
+
+public function update(Request $request, $id) {
+	$todo = Todo::find($id);
+	$todo->title = $request->title;
+	$todo->save();
+
+	return redirect()->route('todos')->with('success', 'Tarea actualizada exitosamente');
+}
+
+Eliminar tarea
+--------------
+
+De la vista index de tareas se tiene:
+
+<div class="col-md-3 d-flex justify-content-end">
+	<form action="{{ route('todos-destroy', [$todo->id]) }}" method="POST">
+		@method('DELETE')
+		@csrf
+		<button class="btn btn-danger btn-sm">Eliminar</button>
+	</form>
+</div>
+
+Repetir los mecanismos anteriores.
+
+Ruta:
+
+Route::delete('/tareas/{id}', [TodosController::class, 'destroy'])->name('todos-destroy');
+
+Controlador:
+
+public function destroy($id) {
+	$todo = Todo::find($id);
+	$todo->delete();
+
+	return redirect()->route('todos')->with('success', 'Tarea eliminada exitosamente');
+}
+
+Ver todas las rutas
+===================
+
+Ejecutar: php artisan route:list
+
+Trabajar con un modelo asociado
+===============================
+
+Crearemos un modelo llamado "Categorías" y su respectivo controlador en sus respectivas rutas.
+
+Ejecutar:
+php artisan make:model Category -m
+php artisan make:controller CategoriesController --resource
+php artisan migrate
+
+El controlador con el flag "resource" se considera controlador de recurso. Se evidencia ello cuando agregamos en las rutas:
+
+Route::resource('categories', CategoriesController::class);
+
+A diferencia del otro modelo, el que se haya creado como recurso facilita la creación de métodos para ya ser desarrollados:
+
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+
+class CategoriesController extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     */
+    public function index()
+    {
+        //
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create()
+    {
+        //
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request)
+    {
+        //
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(string $id)
+    {
+        //
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(string $id)
+    {
+        //
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, string $id)
+    {
+        //
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(string $id)
+    {
+        //
+    }
+}
+
+Solo queda pendiente establecer la lógica de esos métodos:
+
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Category;
+use Illuminate\Http\Request;
+
+class CategoriesController extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     */
+    public function index()
+    {
+        $categories = Category::all();
+
+        return view('categories.index', ['categories' => $categories]);
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create()
+    {
+        //
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request)
+    {
+        $request->validate([
+            "name" => 'required|unique:categories|max:255',
+            "color" => 'required|max:7'
+        ]);
+
+        $category = new Category;
+        $category->name = $request->name;
+        $category->color = $request->color;
+        $category->save();
+
+        return redirect()->route('categories.index')->with('success', 'Nueva categoría agregada');
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(string $id)
+    {
+        $category = Category::find($id);
+        return view('categories.show', ['category' => $category]);
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(string $id)
+    {
+        //
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, string $category)
+    {
+        $category = Category::find($category);
+
+        $category->name = $request->name;
+        $category->color = $request->color;
+        $category->save();
+
+        return redirect()->route('categories.index')->with('success', 'Categoría actualizada exitosamente');
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy($category)
+    {
+        //
+        $category = Category::find($category);
+        $category->todos()->each(function($todo) {
+            $todo->delete(); // <-- borra cada todo en la categoría
+         });
+        $category->delete();
+        return redirect()->route('categories.index')->with('success', 'Categoría eliminada exitosamente');
+    }
+}
+
+
+Luego, referenciar categorías con las tareas (modelo anterior):
+
+php artisan make:migration add_category_id_to_todos_table --table=todos
+
+En el archivo de migración generado, editar con lo siguiente:
+
+public function up(): void
+{
+	Schema::table('todos', function (Blueprint $table) {
+		$table->bigInteger('category_id')->unsigned();
+		$table
+			->foreign('category_id')
+			->references('id')
+			->on('categories')
+			->after('title');
+	});
+}
+
+Eloquent se encargará, en la migración, de generar una FK a Todos que referencia a la tabla Categories.
+
+Para este ejemplo, se necesita generar la relación 1-* (uno a muchos) de Category a Todos (una categoría tiene varias tareas, y una tarea pertenece a una sola categoría). En tal caso, se debe afectar el modelo Category:
+
+class Category extends Model
+{
+    use HasFactory;
+
+    public function todos(){ // <================= referencia a la tabla Todos
+        return $this->hasMany(Todo::class);
+    }
+}
+
+Con ello se podrá aplicar el comando de migración.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
