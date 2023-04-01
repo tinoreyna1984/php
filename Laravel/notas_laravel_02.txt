@@ -1,0 +1,986 @@
+Laravel
+*******
+
+Usos de Laravel:
+
+* Crear un app web fullstack basado en el esquema MVC usando el lenguaje PHP.
+* Crear APIs de servicios (REST, GraphQL, etc.)
+
+Primer paso
+===========
+
+Instalar PHP (vía directa o por XAMPP) y Composer.
+
+Corrección de errores (si ocurren)
+----------------------------------
+
+Corregir error:
+
+PS C:\Users\Tino> php -v
+PHP Warning:  PHP Startup: Unable to load dynamic library 'bz2' (tried: \xampp\php\ext\bz2 (No se puede encontrar el m├│dulo especificado), \xampp\php\ext\php_bz2.dll (No se puede encontrar el m├│dulo especificado)) in Unknown on line 0
+
+Warning: PHP Startup: Unable to load dynamic library 'bz2' (tried: \xampp\php\ext\bz2 (No se puede encontrar el m├│dulo especificado), \xampp\php\ext\php_bz2.dll (No se puede encontrar el m├│dulo especificado)) in Unknown on line 0
+PHP Warning:  PHP Startup: Unable to load dynamic library 'curl' (tried: \xampp\php\ext\curl (No se puede encontrar el m├│dulo especificado), \xampp\php\ext\php_curl.dll (No se puede encontrar el m├│dulo especificado)) in Unknown on line 0
+
+...
+
+Cambiar en php.ini:
+extension_dir=<ruta absoluta de php>\ext
+
+Corregir error:
+
+PHP Warning:  Cannot open "\xampp\php\extras\browscap.ini" for reading in Unknown on line 0
+
+Warning: Cannot open "\xampp\php\extras\browscap.ini" for reading in Unknown on line 0
+PHP Fatal error:  Unable to start standard module in Unknown on line 0
+
+Fatal error: Unable to start standard module in Unknown on line 0
+
+Cambiar en php.ini:
+extension_dir=<ruta absoluta de php>\extras\browscap.ini
+
+Instalar Laravel
+================
+
+Instalación global
+------------------
+
+Ejecutar:
+composer global require laravel/installer
+
+Instalación global y creación del proyecto
+------------------------------------------
+
+Ejecutar:
+composer create-project laravel/laravel <nombre de carpeta de proyecto>
+
+Crear proyecto de Laravel (con instalación global)
+==================================================
+
+laravel new <nombre de carpeta de proyecto>
+
+Dentro del proyecto
+-------------------
+
+cd <nombre de carpeta de proyecto>
+
+Iniciar el servidor de aplicación web
+-------------------------------------
+
+php artisan serve
+
+Habilitar modo de mantenimiento
+-------------------------------
+
+php artisan down
+
+Deshabilitar modo de mantenimiento
+----------------------------------
+
+php artisan up
+
+
+Modelos
+=======
+
+Crear nuevo modelo
+------------------
+
+Ejecutar: php artisan make:model <Modelo> -m
+
+Modelo: es el modelo que queremos crear (el nombre debe ser capitalizado)
+-m: indica que haremos una migración
+
+Una migración es una forma de versionamiento de modelos creados desde Laravel.
+
+Ej: php artisan make:model Todo -m
+
+El resultado debe salir:
+* Modelo: en app/Models debe estar, por ejemplo, Todo.php
+* Migración: en database/migrations debe estar el snapshot <fecha de la migración>_create_todos_table.php
+
+Editar un modelo
+----------------
+
+Ir a la migración generada y trabajar en el método up de ese modelo:
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('todos', function (Blueprint $table) {
+            $table->id();
+            $table->string('title'); // <============= agregamos este campo
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('todos');
+    }
+};
+
+Ejecutar la migración y crear las tablas
+----------------------------------------
+
+Crear esquema. Para este ejemplo, MySQL:
+
+mysql -u root -p
+create database todos;
+
+Configurar conexión a "todos":
+
+* Ir a la raíz del proyecto, acceder a .env
+
+* Trabajar en este bloque:
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=todos # <=== nombre del esquema
+DB_USERNAME=root
+DB_PASSWORD=
+
+* Migrar
+
+Ejecutar: php artisan migrate
+
+Debe generar algo como esto:
+
+PS E:\laravel\tareas-laravel> php artisan migrate
+
+   INFO  Preparing database.
+
+  Creating migration table .............................................................................................................. 515ms DONE
+
+   INFO  Running migrations.
+
+  2014_10_12_000000_create_users_table .................................................................................................. 951ms DONE
+  2014_10_12_100000_create_password_reset_tokens_table ................................................................................ 1,667ms DONE
+  2019_08_19_000000_create_failed_jobs_table ............................................................................................ 757ms DONE
+  2019_12_14_000001_create_personal_access_tokens_table ............................................................................... 1,591ms DONE
+  2023_03_29_211810_create_todos_table .................................................................................................. 299ms DONE
+
+Y se puede verificar la creación de la tabla Todos.
+
+* Deshacer última migración
+
+Ejecutar: php artisan migrate:rollback
+
+Controladores
+=============
+
+Crear controlador
+-----------------
+
+Ejecutar: php artisan make:controller <nombre capitalizado del controlador>
+
+Ej: php artisan make:controller TodosController
+
+El resultado es un controlador que se genera en app/Http/Controllers/TodosController.php
+
+Editar un controlador
+---------------------
+
+Por convención, laravel trabaja con estos nombres de métodos en sus controladores:
+
+* index: para mostrar todos los registros.
+* store: para guardar un registro.
+* update: para actualizar un registro.
+* destroy: para eliminar un registro.
+* edit: para mostrar un formulario de edición.
+
+Ejemplo:
+
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Todo;
+use Illuminate\Http\Request;
+
+class TodosController extends Controller
+{
+    public function store(Request $request) {
+        $request->validate([
+            'title' => 'required|min:3'
+        ]);
+
+        $todo = new Todo; // requiere una instancia de la clase Todo
+        $todo->title = $request->title; // guardo el título del request en la instancia
+        $todo->save(); // guardo el registro en la base de datos
+
+        return redirect()->route('todos')->with('success', 'Tarea creada exitosamente'); // hago la redirección hacia "todos"
+    }
+}
+
+Actualizar la ruta con el controlador
+-------------------------------------
+
+<?php
+
+use App\Http\Controllers\TodosController;
+use Illuminate\Support\Facades\Route;
+
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+|
+| ...
+|
+*/
+
+Route::get('/', function () {
+    return view('welcome');
+});
+
+Route::get('/tareas', [TodosController::class, 'index'])->name('todos'); // <==== se iguala el comportamiento del endpoint del POST en la parte de "name"
+
+Route::post('/tareas', [TodosController::class, 'store'])->name('todos'); // <==== agrego la ruta post
+
+Ese POST significa que estoy llamando a la clase del controlador TodosController y a su método "store" para aplicar la inserción como un método post.
+La parte final es opcional, pero recomendable: en caso cambien el nombre de ruta, el endpoint podrá ser reconocido por la vista como "todos".
+
+
+Crear un modelo integrado
+=========================
+
+Ejecutar: php artisan make:model <Modelo> -mcr
+
+En este caso, se pide crear un modelo migrable, con un controlador y recursos (del controlador).
+
+Ejemplo: si ejecutamos: php artisan make:model Empleado -mcr
+
+La salida en consola es:
+
+PS E:\laravel\sistema> php artisan make:model Empleado -mcr
+
+   INFO  Model [E:\laravel\sistema\app/Models/Empleado.php] created successfully.
+
+   INFO  Migration [E:\laravel\sistema\database\migrations/2023_03_31_001256_create_empleados_table.php] created successfully.
+
+   INFO  Controller [E:\laravel\sistema\app/Http/Controllers/EmpleadoController.php] created successfully.
+
+Ello significa que se creó un modelo con su respectiva migración: app/Models/Empleado.php y database\migrations/2023_03_31_001256_create_empleados_table.php, y en adición a ello el controlador app/Http/Controllers/EmpleadoController.php con los métodos que vienen como recurso.
+
+app/Models/Empleado.php:
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Empleado extends Model
+{
+    use HasFactory;
+}
+
+database\migrations/2023_03_31_001256_create_empleados_table.php:
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('empleados', function (Blueprint $table) {
+            $table->id();
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('empleados');
+    }
+};
+
+app/Http/Controllers/EmpleadoController.php:
+
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Empleado;
+use Illuminate\Http\Request;
+
+class EmpleadoController extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     */
+    public function index()
+    {
+        //
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create()
+    {
+        //
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request)
+    {
+        //
+    }
+
+    /* ... y demás métodos en el modelo */
+}
+
+
+Rutas y Vistas
+==============
+
+En la carpeta resources/views del proyecto se alojan las vistas.
+
+Es posible crear más vistas y en subcarpetas, por ejemplo resources/views/empleado/index.blade.php.
+
+Para acceder a la vista, se requiere ajustar la ruta a lo siguiente (en routes/web.php):
+
+Route::get('/empleado', function () {
+    return view('empleado.index');
+});
+
+Para acceder a una vista específica a través del controlador como clase, usamos:
+
+Route::get('/empleado/create', [EmpleadoController::class, 'create']);
+
+Al invocar a la clase de esta manera, solicitamos que llame al método create definido en el controlador:
+
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Empleado;
+use Illuminate\Http\Request;
+
+class EmpleadoController extends Controller
+{
+    // ...
+
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create()
+    {
+        //
+        return view('empleado.create');
+    }
+
+    // ...
+}
+
+Si se requiere generar todas las rutas asociadas a los métodos con una sola línea, bastaría emplear:
+
+Route::resource('empleado', EmpleadoController::class);
+
+
+Dinamizar vistas
+----------------
+
+* create
+
+Considerando el método create en el controlador de empleados:
+
+class EmpleadoController extends Controller
+{
+    // ...
+
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create()
+    {
+        //
+        return view('empleado.create');
+    }
+
+    // ...
+}
+
+Y la vista correspondiente:
+
+<form action="" style="display: flex; flex-direction: column;" method="post" enctype="multipart/form-data">
+    <label for="Nombre">Nombre:</label>
+    <input type="text" name="Nombre" id="Nombre">
+    <label for="ApellidoPaterno">Apellido Paterno:</label>
+    <input type="text" name="ApellidoPaterno" id="ApellidoPaterno">
+    <label for="ApellidoMaterno">Apellido Materno:</label>
+    <input type="text" name="ApellidoMaterno" id="ApellidoMaterno">
+    <label for="Correo">Correo:</label>
+    <input type="email" name="Correo" id="Correo">
+    <label for="Foto">Foto:</label>
+    <input type="file" name="Foto" id="Foto">
+    <input type="submit" name="Enviar">
+</form>
+
+Queda entrelazar ambas cosas. Se procede con lo siguiente:
+
+1. Modificar la vista:
+
+<form
+    action="{{url('/empleado')}}" <============== agregar
+    style="display: flex; flex-direction: column; gap: 5px; padding: 10px 0; max-width: 300px;"
+    method="post" enctype="multipart/form-data"
+>
+@csrf <============= agregar
+    <label for="Nombre">Nombre:</label>
+    <input type="text" name="Nombre" id="Nombre">
+    <label for="ApellidoPaterno">Apellido Paterno:</label>
+    <input type="text" name="ApellidoPaterno" id="ApellidoPaterno">
+    <label for="ApellidoMaterno">Apellido Materno:</label>
+    <input type="text" name="ApellidoMaterno" id="ApellidoMaterno">
+    <label for="Correo">Correo:</label>
+    <input type="email" name="Correo" id="Correo">
+    <label for="Foto">Foto:</label>
+    <input type="file" name="Foto" id="Foto">
+    <input type="submit" value="Enviar">
+</form>
+
+Modificar el store:
+
+public function store(Request $request)
+{
+	// toma todos los valores del request excepto el token
+	$datosEmpleado = $request->except('_token');
+	if($request->hasFile('Foto')){ // si existe, almacena la foto
+		$datosEmpleado['Foto'] = $request->file(('Foto'))->store('uploads', 'public');
+	}
+	Empleado::insert($datosEmpleado); // inserta en tabla
+
+	return response()->json($datosEmpleado);
+}
+
+Al probar la inserción, se verifica que funciona correctamente.
+
+Asimismo, lo almacena en la carpeta storage/app/public/uploads.
+
+* index
+
+En este caso, editamos el método index del controlador:
+
+class EmpleadoController extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     */
+    public function index()
+    {
+        //
+        $datos["empleados"] = Empleado::paginate(5); // tomamos los empleados del modelo Empleado y aparecerán 5 registros por página
+        return view('empleado.index', $datos); // enviamos los datos al index de la vista de empleado
+    }
+	
+	// ...
+	
+}
+
+Se enlazará con el blade empleado/index:
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Foto</th>
+            <th>Nombre</th>
+            <th>Apellido Paterno</th>
+            <th>Apellido Materno</th>
+            <th>Correo</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach ($empleados as $empleado )
+            <tr>
+                <th>{{$empleado->id}}</th>
+                <th><img src="{{$empleado->Foto}}" alt="foto" /></th>
+                <th>{{$empleado->Nombre}}</th>
+                <th>{{$empleado->ApellidoPaterno}}</th>
+                <th>{{$empleado->ApellidoMaterno}}</th>
+                <th>{{$empleado->Correo}}</th>
+                <th>Editar | Borrar</th>
+            </tr>
+        @endforeach
+    </tbody>
+</table>
+
+Notar que se usó la directiva @foreach para recorrer los registros y poder dinamizar el renderizado de la data.
+
+* destroy
+
+Eliminar usuarios.
+
+En la vista:
+
+<table class="table">
+    // ...
+                <th>Editar |
+                    <form action="{{url('/empleado/'.$empleado->id)}}" method="post"> <===========editar este botón
+                        @method('DELETE')
+                        @csrf
+                        <input type="submit" onclick="return confirm('¿Realmente deseas borrar?')" value="Borrar">
+                    </form>
+                </th>
+            </tr>
+    // ...
+</table>
+
+En el controlador:
+
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Empleado;
+use Illuminate\Http\Request;
+
+class EmpleadoController extends Controller
+{
+    // ...
+    public function destroy($id)
+    {
+        //
+        Empleado::destroy($id);
+        return redirect('empleado');
+    }
+}
+
+* edit
+
+Se genera el formulario de edición de la siguiente manera:
+
+En edit.blade.php:
+
+@include("empleado.form")
+
+Controlador:
+
+public function edit($id)
+{
+	//
+	$empleado = Empleado::findOrFail($id);
+	return view('empleado.edit', compact('empleado'));
+}
+
+Modificamos el formulario inicial:
+
+create.blade.php:
+
+Formulario de creacion de empleado
+
+<form
+    action="{{url('/empleado')}}"
+    method="post" enctype="multipart/form-data"
+>
+@csrf
+    @include("empleado.form")
+</form>
+
+form.blade.php:
+
+<label for="Nombre">Nombre:</label>
+<input type="text" name="Nombre" value="{{$empleado->Nombre}}" id="Nombre"><br>
+<label for="ApellidoPaterno">Apellido Paterno:</label>
+<input type="text" name="ApellidoPaterno" value="{{$empleado->ApellidoPaterno}}" id="ApellidoPaterno"><br>
+<label for="ApellidoMaterno">Apellido Materno:</label>
+<input type="text" name="ApellidoMaterno" value="{{$empleado->ApellidoMaterno}}" id="ApellidoMaterno"><br>
+<label for="Correo">Correo:</label>
+<input type="email" name="Correo" value="{{$empleado->Correo}}" id="Correo"><br>
+<label for="Foto">Foto:</label>
+<input type="file" name="Foto" value="{{$empleado->Foto}}" id="Foto"><br>
+<input type="submit" value="Enviar">
+
+edit.blade.php:
+
+@include("empleado.form")
+
+* update
+
+Sobre el rediseño anterior, hacemos funcionar el update:
+
+public function update(Request $request, $id)
+{
+	//
+	$datosEmpleado = $request->except('_token', '_method');
+	Empleado::where('id','=',$id)->update($datosEmpleado);
+	$empleado = Empleado::findOrFail($id);
+	return view('empleado.edit', compact('empleado'));
+}
+
+edit.blade.php:
+
+<form action="{{ url('/empleado/'.$empleado->id) }}" method="post" enctype="multipart/form-data">
+    @csrf
+    @method('PATCH')
+    @include('empleado.form')
+</form>
+
+form.blade.php:
+
+<label for="Nombre">Nombre:</label>
+<input type="text" name="Nombre" value="{{isset($empleado->Nombre) ? $empleado->Nombre : ''}}" id="Nombre"><br>
+<label for="ApellidoPaterno">Apellido Paterno:</label>
+<input type="text" name="ApellidoPaterno" value="{{isset($empleado->ApellidoPaterno) ? $empleado->ApellidoPaterno : ''}}" id="ApellidoPaterno"><br>
+<label for="ApellidoMaterno">Apellido Materno:</label>
+<input type="text" name="ApellidoMaterno" value="{{isset($empleado->ApellidoMaterno) ? $empleado->ApellidoMaterno : ''}}" id="ApellidoMaterno"><br>
+<label for="Correo">Correo:</label>
+<input type="email" name="Correo" value="{{isset($empleado->Correo) ? $empleado->Correo : ''}}" id="Correo"><br>
+<label for="Foto">Foto:</label>
+@if (isset($empleado->Foto))
+    <img src="{{asset('storage').'/'.$empleado->Foto}}" width="120" alt="foto">
+@endif
+<input type="file" name="Foto" value="" id="Foto"><br>
+<input type="submit" value="Enviar">
+
+Usar el storage para las fotos y multimedia
+===========================================
+
+Ejecutar: php artisan storage:link
+
+En la imagen: <img src="{{asset('storage').'/'.$empleado->Foto}}" width="120" alt="foto">
+
+UI y login
+==========
+
+Ejecutar:
+
+composer require laravel/ui
+php artisan ui bootstrap --auth
+npm i
+npm run dev
+
+Configurar autenticación
+========================
+
+Ir a inicio -> registrar -> registrarse.
+
+La información se guarda en la tabla "users" que viene con Laravel.
+
+Configurar las redirecciones
+----------------------------
+
+Login al iniciar el sitio:
+
+Route::get('/', function () {
+    return view('auth.login');
+});
+
+Redirigir en caso de login exitoso:
+
+
+//Route::get('/home', [HomeController::class, 'index'])->name('home');
+Route::get('/home', [EmpleadoController::class, 'index'])->name('home'); // prompt del login es la página inicial
+
+Route::group(['middleware' => 'auth'], function() {
+    Route::get('/home', [EmpleadoController::class, 'index'])->name('home'); // se redirige a "empleado" después de login exitoso
+});
+
+Usando template
+---------------
+
+Tomando como referencia home.blade.php, utilizar el bloque:
+
+@extends('layouts.app')
+
+@section('content')
+<div class="container">
+    // cualquier contenido
+</div>
+@endsection
+
+@section('content') significa que se reutiliza un template generado previamente al instalar los componentes UI de los pasos previos. Hace uso de "layouts.app", el blade que define el marco general de la aplicación.
+
+En layouts.app, en la parte final tenemos:
+
+<main class="py-4">
+	@yield('content')
+</main>
+
+lo que permite el uso de ese layout como template.
+
+Se aplicará a los blades: empleado.create, empleado.edit y empleado.index.
+
+
+Ajustar opciones de seguridad
+-----------------------------
+
+En web.php, ajustar el ruteo:
+
+Route::resource('empleado', EmpleadoController::class)->middleware('auth');
+
+Esto agrega un middleware que exige que se respete el proceso de autenticación antes de acceder a las páginas protegidas.
+
+Deshabilitar registro y reseteo de clave
+----------------------------------------
+
+Auth::routes(['register' => false, 'reset' => false]);
+
+
+Validación de datos
+-------------------
+
+Ajustar el método store:
+
+/**
+ * Store a newly created resource in storage.
+ */
+public function store(Request $request)
+{
+	// criterios de validación previa de los campos
+	$campos = [
+		'Nombre' => 'required|string|max:100',
+		'ApellidoPaterno' => 'required|string|max:100',
+		'ApellidoMaterno' => 'required|string|max:100',
+		'Correo' => 'required|email',
+		'Foto' => 'required|max:10000|mimes:jpg,jpeg,png',
+	];
+	$mensajes = [
+		'required' => 'El :attribute es requerido',
+		'Foto.required' => 'La foto es requerida',
+	];
+
+	// valida el request
+	$this->validate($request, $campos, $mensajes);
+
+	// ...
+}
+
+Aplicar a update:
+
+public function update(Request $request, $id)
+{
+	// criterios de validación previa de los campos
+	$campos = [
+		'Nombre' => 'required|string|max:100',
+		'ApellidoPaterno' => 'required|string|max:100',
+		'ApellidoMaterno' => 'required|string|max:100',
+		'Correo' => 'required|email',
+	];
+	$mensajes = [
+		'required' => 'El :attribute es requerido',
+	];
+	// valida el request
+	if ($request->hasFile('Foto')) { // si se desea cambiar la foto
+		$campos = [
+			'Foto' => 'required|max:10000|mimes:jpg,jpeg,png',
+		];
+		$mensajes = [
+			'Foto.required' => 'La foto es requerida',
+		];
+	}
+	$this->validate($request, $campos, $mensajes);
+
+	// ...
+}
+
+Aplicar a las vistas:
+
+form.blade.php:
+
+<h1>{{ $modo }} empleado</h1>
+
+// agregar este bloque, trayendo los errores de validación al formulario
+@if (count($errors) > 0)
+    <div class="alert alert-danger" role="alert">
+        <ul>
+            @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
+
+<div class="form-group">
+    // ...
+</div>
+
+
+Prevenir borrado total ante un error
+------------------------------------
+
+form.blade.php:
+
+<h1>{{ $modo }} empleado</h1>
+
+...
+
+<div class="form-group">
+    <label class="form-label" for="Nombre">Nombre:</label>
+	// agregar old(Nombre)
+    <input class="form-control" type="text" name="Nombre"
+        value="{{ isset($empleado->Nombre) ? $empleado->Nombre : old('Nombre') }}" id="Nombre"><br>
+    // lo mismo a los demás campos de texto
+</div>
+
+
+Ocultar mensajes y redireccionar
+--------------------------------
+
+En los métodos de los controladores, se puede usar return redirect en lugar de return view.
+
+Por ejemplo:
+
+return view('empleado.edit', compact('empleado'));
+
+Puede ser reemplazado por:
+return redirect('empleado')->with('mensaje', 'Empleado actualizado exitosamente');
+
+En las alertas cuando se inserta con éxito o cuando hay error:
+
+@extends('layouts.app')
+
+@section('content')
+    <div class="container">
+
+        @if (Session::has('mensaje'))
+            <div class="alert alert-success alert-dismissible" role="alert">
+                {{ Session::get('mensaje') }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        @endif
+    // ...
+
+@endsection
+
+Implementar Navbar
+------------------
+
+En app.blade.php:
+
+<body>
+    <div id="app">
+        <nav class="navbar navbar-expand-md navbar-light bg-white shadow-sm">
+            <div class="container">
+                <a class="navbar-brand" href="{{ url('/') }}">
+                    {{ config('app.name', 'Laravel') }}
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="{{ __('Toggle navigation') }}">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                    <!-- Left Side Of Navbar -->
+                    <ul class="navbar-nav me-auto">
+                        <a class="nav-link" href="{{ route('empleado.index') }}">{{ __('Empleados') }}</a> <====== agregar los enlaces con este formato
+                    </ul>
+				</div>
+				// ...
+			</div>
+		</nav>
+	</div>
+</body>
+
+Formato: <a class="nav-link" href="{{ route('blade') }}">{{ __('Nombre del enlace') }}</a>
+
+
+Paginación
+----------
+
+Ir a app/Providers/AppServiceProvider:
+
+<?php
+
+namespace App\Providers;
+
+use Illuminate\Pagination\Paginator;  // <=============== agregar
+use Illuminate\Support\ServiceProvider;
+
+class AppServiceProvider extends ServiceProvider
+{
+    /**
+     * Register any application services.
+     */
+    public function register(): void
+    {
+        //
+    }
+
+    /**
+     * Bootstrap any application services.
+     */
+    public function boot(): void
+    {
+        //
+        Paginator::useBootstrap();   // <=============== agregar
+    }
+}
+
+En empleados/index.blade.php:
+
+@extends('layouts.app')
+
+@section('content')
+    <div class="container">
+
+        @if (Session::has('mensaje'))
+            <div class="alert alert-success alert-dismissible" role="alert">
+                {{ Session::get('mensaje') }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        @endif
+
+        <a class="btn btn-primary" href="{{ url('empleado/create') }}">Registrar nuevo empleado</a>
+
+        <table class="table">
+            // ...
+        </table>
+        {!! $empleados->links() !!}    // <====================== agregar
+    </div>
+@endsection
+
+Genera la paginación según lo determinado en el controlador de Empleado:
+
+class EmpleadoController extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     */
+    public function index()
+    {
+        //
+        $datos["empleados"] = Empleado::paginate(5); // < =============== paginación
+        return view('empleado.index', $datos);
+    }
+	
+	// ...
+}
+
+
+
+
