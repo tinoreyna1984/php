@@ -982,5 +982,40 @@ class EmpleadoController extends Controller
 }
 
 
+EXTRA: Agregar funcionalidad REST API al CRUD actual
+====================================================
+
+Nota: Laravel ya cuenta con CORS en el middleware general. Su configuración es opcional.
+
+En este proyecto de ejemplo, se puede agregar un método al controlador Empleado para acceder a la tabla de empleados:
+
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Empleado;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+
+class EmpleadoController extends Controller
+{
+    // ...
+
+    public function getEmpleados(){
+        return response()->json(Empleado::all(), 200);
+    }
+}
+
+En este caso, estoy consultando a la tabla Empleado, a través del modelo Empleado usando el método all.
+Si la respuesta es exitosa, devuelve un código HTTP 200 y el arreglo de esos empleados.
+
+Considerando que este método es público, queda editar el archivo api.php en la carpeta "routes":
+
+Route::get('empleado','App\Http\Controllers\EmpleadoController@getEmpleados');
+
+Estoy empleando el método getEmpleados del controlador EmpleadoController. Para consumir el API en ese endpoint, accedo a <mi_servidor>/api/empleado.
+
+
+
 
 
