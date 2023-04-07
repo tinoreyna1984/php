@@ -691,6 +691,9 @@ La información se guarda en la tabla "users" que viene con Laravel.
 Configurar las redirecciones
 ----------------------------
 
+Agregar al inicio:
+use App\Http\Controllers\HomeController;
+
 Login al iniciar el sitio:
 
 Route::get('/', function () {
@@ -700,7 +703,6 @@ Route::get('/', function () {
 Redirigir en caso de login exitoso:
 
 
-//Route::get('/home', [HomeController::class, 'index'])->name('home');
 Route::get('/home', [EmpleadoController::class, 'index'])->name('home'); // prompt del login es la página inicial
 
 Route::group(['middleware' => 'auth'], function() {
