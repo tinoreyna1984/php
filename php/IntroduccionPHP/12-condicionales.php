@@ -20,6 +20,7 @@ $cliente = [
 
 echo "<br>";
 
+// empty: devuelve true si un array está vacío
 if( !empty($cliente) ) {
     echo "El Arreglo de cliente no esta vacio";
 

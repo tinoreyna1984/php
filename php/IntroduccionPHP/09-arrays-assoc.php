@@ -1,5 +1,6 @@
 <?php include 'includes/header.php';
 
+// arrays asociativos: elementos designados en el formato clave => valor
 $cliente = [
     'nombre' => 'Juan', 
     'saldo' => 200,

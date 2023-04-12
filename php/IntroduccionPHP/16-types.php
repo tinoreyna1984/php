@@ -1,5 +1,6 @@
 <?php 
-declare(strict_types=1);
+// ahora PHP puede ser fuertemente tipado
+declare(strict_types=1); // se declara la fortificación de tipo
 include 'includes/header.php';
 
 function usuarioAutenticado(bool $autenticado) : ?string {

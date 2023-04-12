@@ -1,5 +1,7 @@
 <?php include 'includes/header.php';
 
+// isset: en general, determina si la variable tiene definición o es null
+
 $clientes = [];
 $clientes2 = array();
 $clientes3 = array('Pedro', 'Juan', 'Karen');

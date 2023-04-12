@@ -21,9 +21,9 @@ $productos = [
 echo "<pre>";
 var_dump($productos);
 
-$json = json_encode($productos, JSON_UNESCAPED_UNICODE);
+$json = json_encode($productos, JSON_UNESCAPED_UNICODE); // convierte un array a JSON
 
-$json_array = json_decode($json);
+$json_array = json_decode($json); // convierte un objeto JSON a array
 
 var_dump($json);
 var_dump($json_array);
