@@ -1,0 +1,19 @@
+Laravel desde Docker (Windows)
+******************************
+
+Docker
+======
+
+* Descargar "Docker Desktop" e instalar.
+* Instalar y configurar WSL 2 según lo que se pide en Docker.
+* Abrir y correr Docker Desktop.
+
+Abrir una sesión en WSL
+-----------------------
+
+1. Abrir una sesión de Powershell desde algún directorio de Windows.
+2. Ejecutar: wsl
+3. Crear proyecto. Ejecutar: curl -s https://laravel.build/mi-proyecto | bash
+
+
+
