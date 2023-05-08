@@ -1,0 +1,635 @@
+Curso de Laravel
+****************
+
+Instalación: directa o vía WSL + Docker.
+
+Manejo de las vistas (blades)
+=============================
+
+Enrutamiento de las vistas
+--------------------------
+
+Vía routes/web:
+
+<?php
+
+use Illuminate\Support\Facades\Route;
+
+Route::get('/', function () { // get, post, update, patch, delete son métodos estáticos de la clase Route
+    return view('welcome');
+});
+
+La función "view" toma como parámetro el nombre del archivo dentro de resources/views sin la extensión blade.php.
+
+Uso de templates para reutilizar código sin repetirlo
+=====================================================
+
+Suponer que se tienen tres blades similares:
+
+routes/web.php:
+
+Route::get('/', function () {
+    return view('principal');
+});
+
+Route::get('/nosotros', function () {
+    return view('nosotros');
+});
+
+Route::get('/tienda', function () {
+    return view('tienda');
+});
+
+Cada blade tiene:
+
+principal.blade.php:
+<body>
+    <nav>
+        <a href="/">Principal</a>
+        <a href="/nosotros">Nosotros</a>
+        <a href="/tienda">Tienda</a>
+    </nav>
+    <h1>Principal</h1> 
+</body>
+
+nosotros.blade.php:
+<body>
+    <nav>
+        <a href="/">Principal</a>
+        <a href="/nosotros">Nosotros</a>
+        <a href="/tienda">Tienda</a>
+    </nav>
+    <h1>Nosotros</h1> 
+</body>
+
+tienda.blade.php:
+<body>
+    <nav>
+        <a href="/">Principal</a>
+        <a href="/nosotros">Nosotros</a>
+        <a href="/tienda">Tienda</a>
+    </nav>
+    <h1>Tienda</h1> 
+</body>
+
+Lo cual genera repetición innecesaria de código.
+
+Entonces se resuelve de la siguiente forma:
+
+1. Crear un único layout que agrupe las páginas:
+
+layouts/app.blade.php:
+<!DOCTYPE html>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <title>Laravel</title>
+
+    </head>
+    <body>
+        <nav>
+            <a href="/">Principal</a>
+            <a href="/nosotros">Nosotros</a>
+            <a href="/tienda">Tienda</a>
+        </nav>
+        <h1>@yield('titulo')</h1>
+    </body>
+</html>
+
+La directiva "yield" permite alojar el contenido variable del componente.
+
+2. Cada sitio tiene:
+
+principal.blade.php:
+
+@extends('layouts.app')
+
+@section('titulo')
+Página principal
+@endsection
+
+nosotros.blade.php:
+
+@extends('layouts.app')
+
+@section('titulo')
+Nosotros
+@endsection
+
+tienda.blade.php:
+
+@extends('layouts.app')
+
+@section('titulo')
+Tienda
+@endsection
+
+Notar que solo la sección "titulo" es el contenido variable y debe estar referenciado en la directiva yield.
+
+
+Se puede tener varios yields y sections para dinamizar el código:
+
+layouts/app.blade.php:
+
+<!DOCTYPE html>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <title>Devstagram - @yield('titulo')</title>
+
+    </head>
+    <body>
+        <nav>
+            <a href="/">Principal</a>
+            <a href="/nosotros">Nosotros</a>
+            <a href="/tienda">Tienda</a>
+        </nav>
+        <h1>@yield('titulo')</h1>
+
+        <hr />
+
+        @yield('contenido')
+    </body>
+</html>
+
+principal.blade.php:
+
+@extends('layouts.app')
+
+@section('titulo')
+Página principal
+@endsection
+
+@section('contenido')
+<p>Bienvenidos a nuestro sitio</p>
+@endsection
+
+Tailwind CSS en Laravel
+=======================
+
+Desde Laravel 9+, este framework incluye Vite para emplear librerías para frontend.
+
+Instalación
+-----------
+
+Con Sail: ./vendor/bin/sail npm i -D tailwindcss postcss autoprefixer
+Sin Sail: npm i -D tailwindcss postcss autoprefixer
+
+Configuración
+-------------
+
+Ejecutar: npx tailwindcss init -p  # <===== crea archivos de configuración de Tailwind y PostCSS
+
+Editar tailwind.config.js:
+
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: [
+    "./resources/**/*.blade.php", // <------------ agregar
+    "./resources/**/*.js", // <------------ agregar
+  ],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+}
+
+En css/app.css agregar las directivas de Tailwind:
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+Asegurarse de que, en el componente principal, la sección <head> tenga al final:
+@vite('resources/css/app.css')
+
+Finalmente, ejecutar:
+
+Con Sail: ./vendor/bin/sail npm run dev
+Sin Sail: npm run dev
+
+Quedaría listo el proyecto con Tailwind y Vite.
+
+
+MVC en Laravel
+==============
+
+Crear controlador
+-----------------
+
+php artisan make:controller <controlador>
+
+Ej: php artisan make:controller RegisterController
+
+Emplear controlador en la ruta (para llamar a la vista)
+-------------------------------------------------------
+
+Sea la ruta:
+
+Route::get('/crear-cuenta', function () {
+    return view('auth.register');
+});
+
+En el controlador:
+
+class RegisterController extends Controller
+{
+    //
+    public function index(){
+        return view('auth.register');
+    }
+}
+
+Entonces, al método en la ruta lo cambiamos por la llamada a index del controlador así:
+
+use App\Http\Controllers\RegisterController; // <-------------  agregar
+
+Route::get('/crear-cuenta',  [RegisterController::class, 'index']);
+
+Protección de formularios en Laravel (Cross Site Request Forgery)
+-----------------------------------------------------------------
+
+<form action="/crear-cuenta" method="POST">
+    @csrf      // <-------------------- agregar siempre
+</form>
+
+
+Controladores
+=============
+
+Métodos generados por Laravel en cada controlador (convencionales)
+------------------------------------------------------------------
+
+- "index": método GET que devuelve todos los registros de una entidad.
+- "show": método GET que devuelve un registro de la entidad.
+- "create": método GET que abre una vista o formulario para ingresar un nuevo registro.
+- "store": método POST para enviar la inserción de un registro a una entidad.
+- "edit": método GET que abre una vista o formulario para actualizar un registro existente.
+- "update": método PUT o PATCH para enviar la actualización de registro.
+- "destroy": método DELETE que elimina un registro de la entidad.
+
+
+Rutas preferentes
+=================
+
+Sea la ruta: Route::get('/crear-cuenta',  [RegisterController::class, 'index']);
+La cual está asociada a: <a class="text-gray-600 uppercase font-bold text-sm" href="/crear-cuenta">Crear cuenta</a>
+
+Es posible que se cambie de nombre de "crear-cuenta" a cualquier otro. Para evitar terminar en enlace roto se procede con:
+
+En app.blade.php:
+<a class="text-gray-600 uppercase font-bold text-sm" href={{ route('register') }}>Crear cuenta</a>
+
+En routes/web.php:
+Route::get('/crear-cuenta',  [RegisterController::class, 'index'])->name('register');
+
+Si cambiamos "crear-cuenta" por "registro", entonces el enlace generado sería "/registro".
+
+Aplica también para formularios:
+
+<form action="/crear-cuenta" method="POST"> cambiaría a:
+<form action={{route("register")}} method="POST">
+
+En:
+Route::get('/registro',  [RegisterController::class, 'index'])->name('register');
+Route::post('/registro',  [RegisterController::class, 'store']);
+Notar que tanto la primera como la segunda ruta deben tener el mismo nombre "/registro" si a la primera se le pasa el parámetro de ruta explícitamente.
+
+Leer los datos ingresados a un formulario
+=========================================
+
+Pasar por el formulario:
+
+public function store(Request $request){
+	dd($request);
+}
+
+Validar datos del formulario
+============================
+
+En el controlador:
+
+	// validación
+	$request->validate([
+		'name' => 'required|min:100',
+	]);
+
+En la vista podríamos tener:
+
+@error('name')
+	<p class="bg-red-500 p-2 text-white text-sm my-2 rounded-lg text-center">
+		El nombre es incorrecto.
+	</p>
+@enderror
+
+O también:
+
+@error('name')
+	<p class="bg-red-500 p-2 text-white text-sm my-2 rounded-lg text-center">
+		{{ $message }}
+	</p>
+@enderror
+Los mensajes van de acuerdo con las restricciones impuestas desde el controlador (pero aparecen en inglés).
+
+Para preservar el valor después de la validación:
+
+<input type="text" id="name" name="name" placeholder="Tu nombre"
+value="{{ old('name') }}" // <----------------  aplicar esto en value
+class="border p-3 w-full rounded-lg @error('name')  border-red-500 @enderror">
+
+Validación personalizada
+------------------------
+
+$rules = [
+	'name' => 'required',
+	'email' => 'required|email',
+	'message' => 'required|max:250',
+];
+
+$customMessages = [
+	'required' => 'El campo :attribute es requerido.'
+];
+
+$this->validate($request, $rules, $customMessages);
+
+Otra forma:
+
+$request->validate([
+    'name' => 'required|max:100',
+],
+[
+	'name.required' => 'El nombre es requerido',
+	'name.max' => 'El nombre no puede tener más de 100 caracteres',
+]);
+
+Migraciones
+===========
+
+Ejecutar: php artisan migrate (o anteponer "sail" si se emplea Sail)
+
+* Deshacer toda la migración
+
+Ejecutar: php artisan migrate:rollback
+
+* Deshacer una cantidad reciente de migraciones
+
+Ejecutar: php artisan migrate:rollback --step=4 # últimas 4 migraciones
+
+Modelo
+======
+
+Ejecutar: php artisan make:model <nombre modelo>
+
+Ej: php artisan make:model User
+
+Ajustar los campos que el modelo espera registrar en la tabla:
+
+class User extends Authenticatable
+{
+    use HasApiTokens, HasFactory, Notifiable;
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+        'username', // <============= si no está ese campo, agregarlo
+    ];
+	// ....
+}
+
+Redireccionar desde controlador
+===============================
+
+En routes/web.php:
+
+Route::get('/muro',  [PostController::class, 'index'])->name('posts.index');
+
+En el controlador (RegisterController):
+
+return redirect()->route('posts.index');
+
+Autenticar después de crear usuario
+===================================
+
+// ...
+
+
+        User::create([ // crear usuario
+            'name' => $request->name,
+            'username' => $request->username,
+            'email' => $request->email,
+            'password' => Hash::make($request->password), // encripta la contraseña
+        ]);
+
+        // autentica usuario después de crearlo
+        /* auth()->attempt([
+            'email' => $request->email,
+            'password' => $request->password,
+        ]); */
+
+        // forma alternativa de autenticación
+        auth()->attempt($request->only('email', 'password'));
+
+        // redirecciona
+        return redirect()->route('posts.index');
+
+// ...
+
+Manejo de sesión desde login
+============================
+
+LoginController.php:
+
+    public function store(Request $request){
+        // validación
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required',
+        ],
+        [
+            'email.required' => 'El email es requerido',
+            'email.email' => 'El email no es válido',
+            'password.required' => 'La contraseña es requerida',
+        ]);
+
+        if(!auth()->attempt($request->only('email', 'password'))){
+            return back()->with('mensaje', 'Credenciales inválidas');
+        }
+    }
+
+login.blade.php:
+
+<form method="POST" action="{{ route('login') }}" novalidate>
+	@csrf
+
+	@if (session('mensaje'))
+		<p class="bg-red-500 p-2 text-white text-sm my-2 rounded-lg text-center">
+			{{ session('mensaje') }}
+		</p>
+	@endif
+	
+	// ....
+</form>
+
+
+Verificar si el usuario está autenticado o no en una vista
+==========================================================
+
+Autenticado
+-----------
+
+@auth
+	<nav class="flex gap-2 items-center">
+		<a class="text-gray-600 text-sm" href="#">Hola, {{ auth()->user()->username }}</a>
+		<a class="text-gray-600 uppercase font-bold text-sm" href="#">Cerrar sesión</a>
+	</nav>
+@endauth
+
+No autenticado
+--------------
+
+@guest
+	<nav class="flex gap-2 items-center">
+		<a class="text-gray-600 uppercase font-bold text-sm" href="{{ route('login') }}">Login</a>
+		<a class="text-gray-600 uppercase font-bold text-sm" href="{{ route('register') }}">Crear cuenta</a>
+	</nav>
+@endguest
+
+Seguridad al cierre de sesión
+=============================
+
+Cuando se define en el controlador:
+
+class LogoutController extends Controller
+{
+    //
+    public function store(){
+        auth()->logout(); // cierra sesión
+        return redirect()->route('login'); // redirige hacia login
+    }
+}
+
+En las rutas debemos tener:
+
+Route::post('/logout', [LogoutController::class, 'store'])->name('logout');
+
+Y en la vista:
+
+<form method="POST" action="{{ route('logout') }}">
+	@csrf
+	<button type="submit" class="text-gray-600 uppercase font-bold text-sm">Cerrar sesión</button>
+</form>
+
+Recordar la sesión
+==================
+
+Vista:
+
+<div class="mb-5">
+	<input type="checkbox" name="remember" id="remember"> Recordarme
+</div>
+
+El controlador recordará el checkbox llamado "remember" y lo pasará como parámetro de request así:
+
+// recordar contraseña: emplear $request->remember
+if(!auth()->attempt($request->only('email', 'password'), $request->remember)){
+	return back()->with('mensaje', 'Credenciales inválidas');
+}
+
+
+Generar evento en enlace
+========================
+
+routes/web.php:
+
+// crear post
+Route::get('/posts/create', [PostController::class, 'create'])->name('posts.create');
+
+Controlador:
+
+public function create()
+{
+	dd("creando post...");
+}
+
+Vista:
+
+<a class="text-gray-600 text-sm" href="{{ route('posts.create') }}">Hola, {{ auth()->user()->username }}</a>
+
+
+Dropzone
+========
+
+Instalación
+-----------
+
+npm i dropzone
+
+Configuración inicial
+---------------------
+
+Abrir resources/js/app.js y editar el archivo:
+
+// agregar:
+import Dropzone from "dropzone";
+Dropzone.autoDiscover = false;
+const dropzone = Dropzone('#dropzone', {
+    dictDefaultMessage: 'Sube tus archivos aquí',
+    acceptedFiles: '.jpg,.jpeg,.png,.gif',
+    addRemoveLinks: true,
+    dictRemoveFile: 'Borrar',
+    maxfiles: 1,
+    uploadMultiple: false,
+});
+
+Controlador y enrutamiento
+--------------------------
+
+php artisan make:controller ImagenController
+
+class ImagenController extends Controller
+{
+    //
+    public function store(){
+        return "desde ImagenController...";
+    }
+}
+
+web.php:
+
+// carga de imágenes
+Route::post('/imagenes', [ImagenController::class, 'store'])->name('imagenes.store');
+
+Formulario:
+
+<form action="{{ route('imagenes.store') }}" id="dropzone" class="dropzone border-dashed border-2 w-full h-96 rounded flex flex-col justify-center items-center">
+</form>
+
+Crear modelo, migración y factory
+=================================
+
+php artisan make:model -mf Post
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

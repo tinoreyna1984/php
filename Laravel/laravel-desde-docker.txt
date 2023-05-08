@@ -4,9 +4,18 @@ Laravel desde Docker (Windows)
 Docker
 ======
 
-* Descargar "Docker Desktop" e instalar.
+* Descargar "Docker Desktop" e instalar como administrador.
 * Instalar y configurar WSL 2 según lo que se pide en Docker.
 * Abrir y correr Docker Desktop.
+
+Solucionar el error: "A timeout occured while waiting for a WSL integration agent to become ready"
+==================================================================================================
+
+Verificar que en Usuarios/<Tu usuario>/AppData/Roaming/Docker/settings.json las propiedades estén colocadas de esta forma:
+
+"integratedWslDistros" : [ ]
+"enableIntegrationWithDefaultWslDistro" : false,
+
 
 Abrir una sesión en WSL
 -----------------------
@@ -14,6 +23,49 @@ Abrir una sesión en WSL
 1. Abrir una sesión de Powershell desde algún directorio de Windows.
 2. Ejecutar: wsl
 3. Crear proyecto. Ejecutar: curl -s https://laravel.build/mi-proyecto | bash
+Por ejemplo: curl -s https://laravel.build/devstagram | bash
+Nota: si después del comando sale: "Docker is not running" -> ir a Docker Desktop -> "Enable integration with my default DSL distro" -> Activar la distro que aparece.
 
+4. Ya se crea la carpeta del proyecto. Es posible accederla:
+cd devstagram
+5. Ejecutar con Sail: ./vendor/bin/sail up
+
+Sail es un aplicativo que, vía Docker, llama a servicios de Laravel, MySQL, etcétera, siendo nombrados así:
+
+devstagram-laravel.test-1
+devstagram-mysql-1       
+devstagram-redis-1       
+devstagram-mailpit-1     
+devstagram-selenium-1    
+devstagram-meilisearch-1 
+devstagram_sail            
+
+La ejecución será exitosa después de que Sail haya cargado todos los controladores instalados a través de las imágenes y librerías de Linux WSL por medio de Docker. Sale un mensaje como este:
+
+devstagram-laravel.test-1  |
+devstagram-laravel.test-1  |    INFO  Server running on [http://0.0.0.0:80].
+devstagram-laravel.test-1  |
+devstagram-laravel.test-1  |   Press Ctrl+C to stop the server
+devstagram-laravel.test-1  |
+
+Asimismo, Docker ya crea una imagen del servidor de Laravel con el nombre del proyecto.
+
+6. Para finalizar el proyecto, cerrarlo y detener los servicios, ejecutar desde otra ventana de Powershell:
+wsl
+cd devstagram
+./vendor/bin/sail down
+Y si se quiere volver a levantar, volver al comando "up".
+O también, en la misma ventana que se ejecutó el comando "up", presionar Control + C.
+
+Sail y Artisan
+==============
+
+Los comandos de Artisan que se pueden emplear serían:
+
+sail php artisan ...
+
+o
+
+sail artisan ...
 
 

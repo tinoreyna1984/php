@@ -176,9 +176,13 @@ PS E:\laravel\tareas-laravel> php artisan migrate
 
 Y se puede verificar la creación de la tabla Todos.
 
-* Deshacer última migración
+* Deshacer toda la migración
 
 Ejecutar: php artisan migrate:rollback
+
+* Deshacer una cantidad reciente de migraciones
+
+Ejecutar: php artisan migrate:rollback --step=4 # últimas 4 migraciones
 
 Controladores
 =============
